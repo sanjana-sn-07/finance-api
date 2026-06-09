@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import models, schemas
 from database import engine, get_db
 import os
+from sqlalchemy import func
 
 load_dotenv()
 
@@ -50,3 +51,15 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
+
+@app.get("/budget")
+def get_budget(db: Session = Depends(get_db)):
+    results = db.query(
+        models.Transaction.category,
+        func.sum(models.Transaction.amount).label("total"),
+        func.count(models.Transaction.id).label("count")
+    ).group_by(models.Transaction.category).all()
+    return [
+        {"category": r.category, "total": round(r.total, 2), "count": r.count}
+        for r in results
+    ]
