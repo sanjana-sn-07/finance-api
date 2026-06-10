@@ -63,3 +63,20 @@ def get_budget(db: Session = Depends(get_db)):
         {"category": r.category, "total": round(r.total, 2), "count": r.count}
         for r in results
     ]
+
+@app.get("/summary")
+def get_summary(db: Session = Depends(get_db)):
+    total = db.query(func.sum(models.Transaction.amount)).scalar() or 0
+    count = db.query(func.count(models.Transaction.id)).scalar() or 0
+    top_category = db.query(
+        models.Transaction.category,
+        func.sum(models.Transaction.amount).label("total")
+    ).group_by(models.Transaction.category)\
+     .order_by(func.sum(models.Transaction.amount).desc())\
+     .first()
+
+    return {
+        "total_spent": round(total, 2),
+        "transaction_count": count,
+        "top_spending_category": top_category.category if top_category else None
+    }
