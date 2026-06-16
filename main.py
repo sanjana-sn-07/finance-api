@@ -6,6 +6,9 @@ import models, schemas
 from database import engine, get_db
 import os
 from sqlalchemy import func
+from auth import hash_password, verify_password, create_access_token, decode_token
+from fastapi.security import OAuth2PasswordRequestForm
+
 
 load_dotenv()
 
@@ -80,3 +83,28 @@ def get_summary(db: Session = Depends(get_db)):
         "transaction_count": count,
         "top_spending_category": top_category.category if top_category else None
     }
+
+@app.post("/register", response_model=dict)
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(models.User).filter(
+        models.User.username == user.username
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    db_user = models.User(
+        username=user.username,
+        hashed_password=hash_password(user.password)
+    )
+    db.add(db_user)
+    db.commit()
+    return {"message": f"User {user.username} created successfully"}
+
+@app.post("/token", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(
+        models.User.username == form_data.username
+    ).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    token = create_access_token({"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}

@@ -1,7 +1,7 @@
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
-bcrypt==5.0.0
+bcrypt==4.0.1
 certifi==2026.5.20
 cffi==2.0.0
 click==8.4.1
@@ -16,7 +16,6 @@ httpx==0.28.1
 idna==3.17
 jiter==0.15.0
 openai==2.41.0
-passlib==1.7.4
 psycopg2-binary==2.9.12
 pyasn1==0.6.3
 pycparser==3.0
@@ -24,6 +23,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 python-dotenv==1.2.2
 python-jose==3.5.0
+python-multipart==0.0.32
 rsa==4.9.1
 six==1.17.0
 sniffio==1.3.1
