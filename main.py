@@ -33,11 +33,11 @@ def root():
     return {"message": "Finance API is running"}
 
 @app.get("/transactions", response_model=list[schemas.TransactionResponse])
-def get_transactions(db: Session = Depends(get_db)):
+def get_transactions(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
     return db.query(models.Transaction).all()
 
 @app.get("/transactions/{transaction_id}", response_model=schemas.TransactionResponse)
-def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
+def get_transaction(transaction_id: int, current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
     transaction = db.query(models.Transaction).filter(
         models.Transaction.id == transaction_id
     ).first()
@@ -46,7 +46,7 @@ def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
     return transaction
 
 @app.post("/transactions", response_model=schemas.TransactionResponse)
-def create_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction(transaction: schemas.TransactionCreate, current_user: str = Depends(decode_token),  db: Session = Depends(get_db)):
     if transaction.category == "uncategorized":
         transaction.category = categorize_transaction(transaction.description)
     db_transaction = models.Transaction(**transaction.model_dump())
@@ -56,7 +56,7 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
     return db_transaction
 
 @app.get("/budget")
-def get_budget(db: Session = Depends(get_db)):
+def get_budget(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
     results = db.query(
         models.Transaction.category,
         func.sum(models.Transaction.amount).label("total"),
@@ -68,7 +68,7 @@ def get_budget(db: Session = Depends(get_db)):
     ]
 
 @app.get("/summary")
-def get_summary(db: Session = Depends(get_db)):
+def get_summary(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
     total = db.query(func.sum(models.Transaction.amount)).scalar() or 0
     count = db.query(func.count(models.Transaction.id)).scalar() or 0
     top_category = db.query(
