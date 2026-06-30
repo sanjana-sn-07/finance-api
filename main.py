@@ -4,6 +4,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import models, schemas
 from database import engine, get_db
+from cache import get_cached, set_cached, delete_cached
 import os
 from sqlalchemy import func
 from auth import hash_password, verify_password, create_access_token, decode_token
@@ -45,6 +46,23 @@ def get_transaction(transaction_id: int, current_user: str = Depends(decode_toke
         raise HTTPException(status_code=404, detail="Transaction not found")
     return transaction
 
+def _compute_summary(db: Session) -> dict:
+    total = db.query(func.sum(models.Transaction.amount)).scalar() or 0
+    count = db.query(func.count(models.Transaction.id)).scalar() or 0
+    top_category = db.query(
+        models.Transaction.category,
+        func.sum(models.Transaction.amount).label("total")
+    ).group_by(models.Transaction.category)\
+     .order_by(func.sum(models.Transaction.amount).desc())\
+     .first()
+
+    return {
+        "total_spent": round(total, 2),
+        "transaction_count": count,
+        "top_spending_category": top_category.category if top_category else None
+    }
+
+
 @app.post("/transactions", response_model=schemas.TransactionResponse)
 def create_transaction(transaction: schemas.TransactionCreate, current_user: str = Depends(decode_token),  db: Session = Depends(get_db)):
     if transaction.category == "uncategorized":
@@ -53,6 +71,7 @@ def create_transaction(transaction: schemas.TransactionCreate, current_user: str
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
+    delete_cached(f"summary:{current_user}")
     return db_transaction
 
 @app.get("/budget")
@@ -69,20 +88,14 @@ def get_budget(current_user: str = Depends(decode_token), db: Session = Depends(
 
 @app.get("/summary")
 def get_summary(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
-    total = db.query(func.sum(models.Transaction.amount)).scalar() or 0
-    count = db.query(func.count(models.Transaction.id)).scalar() or 0
-    top_category = db.query(
-        models.Transaction.category,
-        func.sum(models.Transaction.amount).label("total")
-    ).group_by(models.Transaction.category)\
-     .order_by(func.sum(models.Transaction.amount).desc())\
-     .first()
+    cache_key = f"summary:{current_user}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
 
-    return {
-        "total_spent": round(total, 2),
-        "transaction_count": count,
-        "top_spending_category": top_category.category if top_category else None
-    }
+    result = _compute_summary(db)
+    set_cached(cache_key, result)
+    return result
 
 @app.post("/register", response_model=dict)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
