@@ -20,3 +20,9 @@ class UserCreate(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class PlaidPublicToken(BaseModel):
+    public_token: str
+
+class PlaidLinkTokenResponse(BaseModel):
+    link_token: str
