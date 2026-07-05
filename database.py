@@ -17,10 +17,7 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 if not DATABASE_URL:
-    all_keys = list(os.environ.keys())
-    raise RuntimeError(
-        f"DATABASE_URL not set. ALL env vars available: {all_keys}"
-    )
+    raise RuntimeError("DATABASE_URL environment variable is not set.")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
