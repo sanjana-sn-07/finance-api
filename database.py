@@ -17,8 +17,9 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 if not DATABASE_URL:
+    all_keys = list(os.environ.keys())
     raise RuntimeError(
-        f"DATABASE_URL not set. Available env vars: {[k for k in os.environ.keys() if 'DATA' in k.upper() or 'PG' in k.upper() or 'POST' in k.upper()]}"
+        f"DATABASE_URL not set. ALL env vars available: {all_keys}"
     )
 
 engine = create_engine(DATABASE_URL)
