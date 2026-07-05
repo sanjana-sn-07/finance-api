@@ -4,6 +4,7 @@ A production-grade REST API for personal finance management — built with FastA
 
 **Live:** https://finance-api-production-7467.up.railway.app
 **Docs:** https://finance-api-production-7467.up.railway.app/docs
+**Blog post:** https://medium.com/@sanjana.sn.07/how-i-built-a-production-grade-personal-finance-rest-api-with-fastapi-plaid-and-gpt-4o-mini-5bfd108c803a
 
 ---
 
