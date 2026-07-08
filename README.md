@@ -6,6 +6,8 @@ A production-grade REST API for personal finance management — built with FastA
 **Docs:** https://finance-api-production-7467.up.railway.app/docs
 **Blog post:** https://medium.com/@sanjana.sn.07/how-i-built-a-production-grade-personal-finance-rest-api-with-fastapi-plaid-and-gpt-4o-mini-5bfd108c803a
 
+![API Architecture](docs/architecture.png)
+
 ---
 
 ## Features
@@ -97,17 +99,19 @@ pytest tests/ -v --cov=. --cov-report=term-missing
 
 ## Architecture
 
-Built with a clean layered structure:
+![Architecture Diagram](docs/architecture.png)
 
-```
-main.py          — FastAPI app + all endpoints
-auth.py          — JWT token creation + bcrypt password hashing
-cache.py         — Redis caching helpers
-database.py      — SQLAlchemy engine + session management
-models.py        — PostgreSQL table definitions (Transaction, User)
-schemas.py       — Pydantic request/response validation
-plaid_service.py — Plaid API client + transaction sync
-tests/           — 30 pytest unit tests (86% coverage)
-Dockerfile       — Production container
-docker-compose.yaml — Local dev (PostgreSQL + Redis)
-```
+**Editable source:** `docs/architecture.drawio` (open in [draw.io](https://app.diagrams.net))
+
+| Component | Role |
+|---|---|
+| `main.py` | FastAPI app + all endpoints |
+| `auth.py` | JWT token creation + bcrypt password hashing |
+| `cache.py` | Redis caching helpers (`/summary`, 60s TTL) |
+| `database.py` | SQLAlchemy engine + session management |
+| `models.py` | PostgreSQL tables (User, Transaction) |
+| `schemas.py` | Pydantic request/response validation |
+| `plaid_service.py` | Plaid API client + cursor-based transaction sync |
+| `tests/` | 30 pytest unit tests (86% coverage) |
+| `Dockerfile` | Production container (Railway) |
+| `docker-compose.yaml` | Local dev (PostgreSQL + Redis) |

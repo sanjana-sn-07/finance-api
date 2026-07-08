@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net" agent="Cursor">
+  <diagram id="finance-api-arch" name="Architecture">
+    <mxGraphModel dx="1222" dy="824" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A237E;fontColor=#FFFFFF;fontSize=22;fontStyle=1;strokeColor=#1A237E;" value="PERSONAL FINANCE REST API" vertex="1">
+          <mxGeometry height="48" width="1200" x="40" y="16" as="geometry" />
+        </mxCell>
+        <mxCell id="client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontStyle=1;" value="Client /&lt;br&gt;Swagger UI" vertex="1">
+          <mxGeometry height="60" width="170" x="115" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="fastapi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0D47A1;fontColor=#FFFFFF;fontStyle=1;strokeColor=#0D47A1;" value="FastAPI App&lt;br&gt;(Railway + Docker)&lt;br&gt;main.py · uvicorn" vertex="1">
+          <mxGeometry height="80" width="300" x="430" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="pytest" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#546E7A;fontColor=#546E7A;fontStyle=1;" value="pytest&lt;br&gt;30 tests · 86% coverage" vertex="1">
+          <mxGeometry height="60" width="250" x="950" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;" value="auth.py&lt;br&gt;JWT + bcrypt" vertex="1">
+          <mxGeometry height="58" width="170" x="115" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="cache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;" value="cache.py&lt;br&gt;Redis helpers" vertex="1">
+          <mxGeometry height="58" width="170" x="335" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="plaid_svc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;" value="plaid_service.py&lt;br&gt;Plaid client" vertex="1">
+          <mxGeometry height="58" width="170" x="555" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="schemas" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;" value="schemas.py&lt;br&gt;Pydantic validation" vertex="1">
+          <mxGeometry height="58" width="170" x="775" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontColor=#E65100;fontStyle=1;" value="PostgreSQL&lt;br&gt;Users + Transactions" vertex="1">
+          <mxGeometry height="72" width="170" x="115" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontColor=#E65100;fontStyle=1;" value="Redis&lt;br&gt;/summary cache · 60s TTL" vertex="1">
+          <mxGeometry height="72" width="170" x="335" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="plaid_api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#2E7D32;fontStyle=1;" value="Plaid API&lt;br&gt;bank transactions" vertex="1">
+          <mxGeometry height="72" width="170" x="555" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="openai" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#2E7D32;fontStyle=1;" value="OpenAI API&lt;br&gt;GPT-4o-mini categorize" vertex="1">
+          <mxGeometry height="72" width="170" x="775" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="pandas" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;fontStyle=1;" value="Pandas&lt;br&gt;/report endpoint" vertex="1">
+          <mxGeometry height="72" width="170" x="995" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="webhook" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#2E7D32;fontStyle=1;" value="Plaid Webhook&lt;br&gt;auto-sync on update" vertex="1">
+          <mxGeometry height="58" width="170" x="555" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="docker" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#546E7A;fontColor=#546E7A;" value="Dockerfile + docker-compose&lt;br&gt;Postgres + Redis locally" vertex="1">
+          <mxGeometry height="50" width="250" x="115" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="endpoints" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;align=left;spacingLeft=12;fontSize=11;" value="Key Endpoints&lt;br&gt;POST /register, /token&lt;br&gt;GET /transactions, /budget&lt;br&gt;GET /summary (cached)&lt;br&gt;GET /report&lt;br&gt;POST /plaid/sync, /webhook" vertex="1">
+          <mxGeometry height="110" width="290" x="910" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="fastapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="fastapi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="pytest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="fastapi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.25;exitY=1;entryX=0.5;entryY=0;" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="fastapi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.42;exitY=1;entryX=0.5;entryY=0;" target="cache">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="fastapi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.58;exitY=1;entryX=0.5;entryY=0;" target="plaid_svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="fastapi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.75;exitY=1;entryX=0.5;entryY=0;" target="schemas">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="plaid_svc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="plaid_api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="schemas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="openai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="schemas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="pandas">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="980" y="244" />
+              <mxPoint x="980" y="366" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="plaid_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="webhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#607D8B;dashed=1;exitX=0.5;exitY=1;entryX=0.58;entryY=1;" target="plaid_svc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="540" />
+              <mxPoint x="400" y="540" />
+              <mxPoint x="400" y="290" />
+              <mxPoint x="652" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
