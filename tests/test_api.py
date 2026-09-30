@@ -1,6 +1,20 @@
 from unittest.mock import patch
 
 
+def _auth_for(client, username: str, password: str = "secret") -> dict:
+    register = client.post(
+        "/register",
+        json={"username": username, "password": password},
+    )
+    assert register.status_code == 200
+    login = client.post(
+        "/token",
+        data={"username": username, "password": password},
+    )
+    assert login.status_code == 200
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+
 def test_root(client):
     response = client.get("/")
     assert response.status_code == 200
@@ -280,3 +294,123 @@ def test_plaid_sync_no_account(client, auth_headers):
     response = client.post("/plaid/sync", headers=auth_headers)
     assert response.status_code == 400
     assert "Link a Plaid account first" in response.json()["detail"]
+
+
+def test_transactions_are_isolated_between_users(client):
+    alice_headers = _auth_for(client, "alice")
+    bob_headers = _auth_for(client, "bob")
+
+    alice_txn = client.post(
+        "/transactions",
+        headers=alice_headers,
+        json={"description": "alice lunch", "amount": 25.0, "category": "food"},
+    )
+    assert alice_txn.status_code == 200
+    alice_id = alice_txn.json()["id"]
+
+    assert client.get("/transactions", headers=bob_headers).json() == []
+    hidden = client.get(f"/transactions/{alice_id}", headers=bob_headers)
+    assert hidden.status_code == 404
+
+    bob_txn = client.post(
+        "/transactions",
+        headers=bob_headers,
+        json={"description": "bob bus", "amount": 6.0, "category": "transport"},
+    )
+    assert bob_txn.status_code == 200
+
+    alice_list = client.get("/transactions", headers=alice_headers).json()
+    bob_list = client.get("/transactions", headers=bob_headers).json()
+    assert [row["description"] for row in alice_list] == ["alice lunch"]
+    assert [row["description"] for row in bob_list] == ["bob bus"]
+
+
+def test_budget_summary_and_report_are_isolated_between_users(client):
+    alice_headers = _auth_for(client, "alice")
+    bob_headers = _auth_for(client, "bob")
+
+    client.post(
+        "/transactions",
+        headers=alice_headers,
+        json={"description": "alice rent", "amount": 100.0, "category": "utilities"},
+    )
+    client.post(
+        "/transactions",
+        headers=bob_headers,
+        json={"description": "bob coffee", "amount": 7.0, "category": "food"},
+    )
+
+    alice_budget = client.get("/budget", headers=alice_headers).json()
+    bob_budget = client.get("/budget", headers=bob_headers).json()
+    assert alice_budget == [{"category": "utilities", "total": 100.0, "count": 1}]
+    assert bob_budget == [{"category": "food", "total": 7.0, "count": 1}]
+
+    alice_summary = client.get("/summary", headers=alice_headers).json()
+    bob_summary = client.get("/summary", headers=bob_headers).json()
+    assert alice_summary == {
+        "total_spent": 100.0,
+        "transaction_count": 1,
+        "top_spending_category": "utilities",
+    }
+    assert bob_summary == {
+        "total_spent": 7.0,
+        "transaction_count": 1,
+        "top_spending_category": "food",
+    }
+
+    alice_report = client.get("/report", headers=alice_headers).json()
+    bob_report = client.get("/report", headers=bob_headers).json()
+    assert alice_report["total_transactions"] == 1
+    assert alice_report["total_spent"] == 100.0
+    assert alice_report["top_categories"] == [{"category": "utilities", "total": 100.0}]
+    assert bob_report["total_transactions"] == 1
+    assert bob_report["total_spent"] == 7.0
+    assert bob_report["top_categories"] == [{"category": "food", "total": 7.0}]
+
+
+def test_same_plaid_transaction_id_is_scoped_per_user(client):
+    alice_headers = _auth_for(client, "alice")
+    bob_headers = _auth_for(client, "bob")
+
+    with patch("main.exchange_public_token", return_value=("access-alice", "item-alice")):
+        assert client.post(
+            "/plaid/exchange-token",
+            headers=alice_headers,
+            json={"public_token": "public-alice"},
+        ).status_code == 200
+
+    with patch("main.exchange_public_token", return_value=("access-bob", "item-bob")):
+        assert client.post(
+            "/plaid/exchange-token",
+            headers=bob_headers,
+            json={"public_token": "public-bob"},
+        ).status_code == 200
+
+    synced = {
+        "added": [{
+            "transaction_id": "shared-plaid-transaction-id",
+            "merchant_name": "Coffee Shop",
+            "amount": 9.5,
+            "personal_finance_category": {"primary": "FOOD"},
+        }],
+        "modified": [],
+        "removed": [],
+        "has_more": False,
+        "next_cursor": "cursor-1",
+    }
+
+    with patch("main.sync_transactions", return_value=synced):
+        alice_sync = client.post("/plaid/sync", headers=alice_headers)
+        bob_sync = client.post("/plaid/sync", headers=bob_headers)
+
+    assert alice_sync.status_code == 200
+    assert bob_sync.status_code == 200
+    assert alice_sync.json()["imported"] == 1
+    assert bob_sync.json()["imported"] == 1
+
+    alice_transactions = client.get("/transactions", headers=alice_headers).json()
+    bob_transactions = client.get("/transactions", headers=bob_headers).json()
+    assert len(alice_transactions) == 1
+    assert len(bob_transactions) == 1
+    assert alice_transactions[0]["description"] == "Coffee Shop"
+    assert bob_transactions[0]["description"] == "Coffee Shop"

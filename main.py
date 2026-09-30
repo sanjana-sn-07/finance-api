@@ -26,6 +26,7 @@ app = FastAPI()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+
 def categorize_transaction(description: str) -> str:
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -49,12 +50,13 @@ def _plaid_category(txn: dict) -> str:
     return (pfc.get("primary") or "uncategorized").lower()
 
 
-def _save_plaid_transactions(db: Session, added: list, username: str) -> int:
+def _save_plaid_transactions(db: Session, added: list, user: models.User) -> int:
     count = 0
     for txn in added:
         plaid_id = txn["transaction_id"]
         if db.query(models.Transaction).filter(
-            models.Transaction.plaid_transaction_id == plaid_id
+            models.Transaction.user_id == user.id,
+            models.Transaction.plaid_transaction_id == plaid_id,
         ).first():
             continue
 
@@ -64,6 +66,7 @@ def _save_plaid_transactions(db: Session, added: list, username: str) -> int:
             category = categorize_transaction(description)
 
         db.add(models.Transaction(
+            user_id=user.id,
             description=description,
             amount=float(txn["amount"]),
             category=category,
@@ -73,7 +76,7 @@ def _save_plaid_transactions(db: Session, added: list, username: str) -> int:
 
     if count:
         db.commit()
-        delete_cached(f"summary:{username}")
+        delete_cached(f"summary:{user.username}")
     return count
 
 
@@ -87,7 +90,7 @@ def _sync_user_transactions(user: models.User, db: Session) -> dict:
 
     while has_more:
         result = sync_transactions(user.plaid_access_token, cursor)
-        imported += _save_plaid_transactions(db, result["added"], user.username)
+        imported += _save_plaid_transactions(db, result["added"], user)
         cursor = result["next_cursor"]
         has_more = result["has_more"]
 
@@ -95,29 +98,49 @@ def _sync_user_transactions(user: models.User, db: Session) -> dict:
     db.commit()
     return {"imported": imported, "cursor": cursor}
 
+
 @app.get("/")
 def root():
     return {"message": "Finance API is running"}
 
+
 @app.get("/transactions", response_model=list[schemas.TransactionResponse])
-def get_transactions(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
-    return db.query(models.Transaction).all()
+def get_transactions(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(models.Transaction).filter(
+        models.Transaction.user_id == user.id
+    ).all()
+
 
 @app.get("/transactions/{transaction_id}", response_model=schemas.TransactionResponse)
-def get_transaction(transaction_id: int, current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
+def get_transaction(
+    transaction_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     transaction = db.query(models.Transaction).filter(
-        models.Transaction.id == transaction_id
+        models.Transaction.id == transaction_id,
+        models.Transaction.user_id == user.id,
     ).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return transaction
 
-def _compute_summary(db: Session) -> dict:
-    total = db.query(func.sum(models.Transaction.amount)).scalar() or 0
-    count = db.query(func.count(models.Transaction.id)).scalar() or 0
+
+def _compute_summary(db: Session, user_id: int) -> dict:
+    total = db.query(func.sum(models.Transaction.amount)).filter(
+        models.Transaction.user_id == user_id
+    ).scalar() or 0
+    count = db.query(func.count(models.Transaction.id)).filter(
+        models.Transaction.user_id == user_id
+    ).scalar() or 0
     top_category = db.query(
         models.Transaction.category,
         func.sum(models.Transaction.amount).label("total")
+    ).filter(
+        models.Transaction.user_id == user_id
     ).group_by(models.Transaction.category)\
      .order_by(func.sum(models.Transaction.amount).desc())\
      .first()
@@ -130,38 +153,56 @@ def _compute_summary(db: Session) -> dict:
 
 
 @app.post("/transactions", response_model=schemas.TransactionResponse)
-def create_transaction(transaction: schemas.TransactionCreate, current_user: str = Depends(decode_token),  db: Session = Depends(get_db)):
+def create_transaction(
+    transaction: schemas.TransactionCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     if transaction.category == "uncategorized":
         transaction.category = categorize_transaction(transaction.description)
-    db_transaction = models.Transaction(**transaction.model_dump())
+    db_transaction = models.Transaction(
+        user_id=user.id,
+        **transaction.model_dump(),
+    )
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
-    delete_cached(f"summary:{current_user}")
+    delete_cached(f"summary:{user.username}")
     return db_transaction
 
+
 @app.get("/budget")
-def get_budget(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
+def get_budget(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     results = db.query(
         models.Transaction.category,
         func.sum(models.Transaction.amount).label("total"),
         func.count(models.Transaction.id).label("count")
+    ).filter(
+        models.Transaction.user_id == user.id
     ).group_by(models.Transaction.category).all()
     return [
         {"category": r.category, "total": round(r.total, 2), "count": r.count}
         for r in results
     ]
 
+
 @app.get("/summary")
-def get_summary(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
-    cache_key = f"summary:{current_user}"
+def get_summary(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    cache_key = f"summary:{user.username}"
     cached = get_cached(cache_key)
     if cached:
         return cached
 
-    result = _compute_summary(db)
+    result = _compute_summary(db, user.id)
     set_cached(cache_key, result)
     return result
+
 
 @app.post("/register", response_model=dict)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -177,6 +218,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     return {"message": f"User {user.username} created successfully"}
+
 
 @app.post("/token", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -249,8 +291,13 @@ def plaid_sync(
 
 
 @app.get("/report")
-def get_report(current_user: str = Depends(decode_token), db: Session = Depends(get_db)):
-    transactions = db.query(models.Transaction).all()
+def get_report(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    transactions = db.query(models.Transaction).filter(
+        models.Transaction.user_id == user.id
+    ).all()
     if not transactions:
         return {"message": "No transactions found", "monthly_breakdown": [], "top_categories": []}
 
